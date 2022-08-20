@@ -43,6 +43,7 @@ class Enlace:
     def __init__(self, linha_serial):
         self.linha_serial = linha_serial
         self.linha_serial.registrar_recebedor(self.__raw_recv)
+        self.buffer = b""
 
     def registrar_recebedor(self, callback):
         self.callback = callback
@@ -62,7 +63,23 @@ class Enlace:
         # vir quebrado de várias formas diferentes - por exemplo, podem vir
         # apenas pedaços de um quadro, ou um pedaço de quadro seguido de um
         # pedaço de outro, ou vários quadros de uma vez só.
-        pass
+
+        dados = self.buffer + dados
+        dados = dados.split(b"\xc0")
+
+        # Armazenando o datagrama residual (último elemento do array dados) no buffer
+        if dados[-1] != "\xc0":
+            self.buffer = dados[-1]
+
+        # Enviando todos os datagramas completos (demais elementos do array) à camada superior
+        for datagrama in dados[:-1]:
+            if datagrama != b"":
+                try:
+                    self.callback(self._parse_datagrama(datagrama))
+                except:
+                    import traceback
+
+                    traceback.print_exc()
 
     def _escape_datagrama(self, datagrama):
         return (
@@ -70,3 +87,6 @@ class Enlace:
             + datagrama.replace(b"\xdb", b"\xdb\xdd").replace(b"\xc0", b"\xdb\xdc")
             + b"\xc0"
         )
+
+    def _parse_datagrama(self, datagrama):
+        return datagrama.replace(b"\xdb\xdc", b"\xc0").replace(b"\xdb\xdd", b"\xdb")
