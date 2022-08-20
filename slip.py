@@ -49,27 +49,17 @@ class Enlace:
         self.callback = callback
 
     def enviar(self, datagrama):
-        # TODO: Preencha aqui com o código para enviar o datagrama pela linha
-        # serial, fazendo corretamente a delimitação de quadros e o escape de
-        # sequências especiais, de acordo com o protocolo CamadaEnlace (RFC 1055).
         self.linha_serial.enviar(self._escape_datagrama(datagrama))
         pass
 
     def __raw_recv(self, dados):
-        # TODO: Preencha aqui com o código para receber dados da linha serial.
-        # Trate corretamente as sequências de escape. Quando ler um quadro
-        # completo, repasse o datagrama contido nesse quadro para a camada
-        # superior chamando self.callback. Cuidado pois o argumento dados pode
-        # vir quebrado de várias formas diferentes - por exemplo, podem vir
-        # apenas pedaços de um quadro, ou um pedaço de quadro seguido de um
-        # pedaço de outro, ou vários quadros de uma vez só.
-
         dados = self.buffer + dados
+
+        # Separando datagramas no byte separador
         dados = dados.split(b"\xc0")
 
         # Armazenando o datagrama residual (último elemento do array dados) no buffer
-        if dados[-1] != "\xc0":
-            self.buffer = dados[-1]
+        self.buffer = dados[-1]
 
         # Enviando todos os datagramas completos (demais elementos do array) à camada superior
         for datagrama in dados[:-1]:
